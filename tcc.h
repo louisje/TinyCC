@@ -155,14 +155,14 @@ typedef unsigned short nwchar_t;
 #else
 typedef int nwchar_t;
 #endif
-
+/*
 typedef struct CString {
-    int size; /* size in bytes */
-    void *data; /* either 'char *' or 'nwchar_t *' */
+    int size; // size in bytes 
+    void *data; // either 'char *' or 'nwchar_t *'
     int size_allocated;
-    void *data_allocated; /* if non NULL, data has been malloced */
+    void *data_allocated; // if non NULL, data has been malloced
 } CString;
-
+*/
 /* type definition */
 typedef struct CType {
     int t;

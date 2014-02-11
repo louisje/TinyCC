@@ -19,6 +19,7 @@
  */
 
 #include "tcc.h"
+#include "lib0.c" // ccc 加入
 
 /********************************************************/
 /* global variables */
@@ -325,36 +326,6 @@ int ieee_finite(double d)
     return ((unsigned)((p[1] | 0x800fffff) + 1)) >> 31;
 }
 
-/* copy a string and truncate it. */
-char *pstrcpy(char *buf, int buf_size, const char *s)
-{
-    char *q, *q_end;
-    int c;
-
-    if (buf_size > 0) {
-        q = buf;
-        q_end = buf + buf_size - 1;
-        while (q < q_end) {
-            c = *s++;
-            if (c == '\0')
-                break;
-            *q++ = c;
-        }
-        *q = '\0';
-    }
-    return buf;
-}
-
-/* strcat and truncate. */
-char *pstrcat(char *buf, int buf_size, const char *s)
-{
-    int len;
-    len = strlen(buf);
-    if (len < buf_size) 
-        pstrcpy(buf + len, buf_size - len, s);
-    return buf;
-}
-
 /* extract the basename of a file */
 char *tcc_basename(const char *name)
 {
@@ -409,103 +380,6 @@ void set_pages_executable(void *ptr, unsigned long length)
     end = (end + PAGESIZE - 1) & ~(PAGESIZE - 1);
     mprotect((void *)start, end - start, PROT_READ | PROT_WRITE | PROT_EXEC);
 #endif            
-}
-
-/* memory management */
-#ifdef MEM_DEBUG
-int mem_cur_size;
-int mem_max_size;
-unsigned malloc_usable_size(void*);
-#endif
-
-void tcc_free(void *ptr)
-{
-#ifdef MEM_DEBUG
-    mem_cur_size -= malloc_usable_size(ptr);
-#endif
-    free(ptr);
-}
-
-void *tcc_malloc(unsigned long size)
-{
-    void *ptr;
-    ptr = malloc(size);
-    if (!ptr && size)
-        error("memory full");
-#ifdef MEM_DEBUG
-    mem_cur_size += malloc_usable_size(ptr);
-    if (mem_cur_size > mem_max_size)
-        mem_max_size = mem_cur_size;
-#endif
-    return ptr;
-}
-
-void *tcc_mallocz(unsigned long size)
-{
-    void *ptr;
-    ptr = tcc_malloc(size);
-    memset(ptr, 0, size);
-    return ptr;
-}
-
-void *tcc_realloc(void *ptr, unsigned long size)
-{
-    void *ptr1;
-#ifdef MEM_DEBUG
-    mem_cur_size -= malloc_usable_size(ptr);
-#endif
-    ptr1 = realloc(ptr, size);
-#ifdef MEM_DEBUG
-    /* NOTE: count not correct if alloc error, but not critical */
-    mem_cur_size += malloc_usable_size(ptr1);
-    if (mem_cur_size > mem_max_size)
-        mem_max_size = mem_cur_size;
-#endif
-    return ptr1;
-}
-
-char *tcc_strdup(const char *str)
-{
-    char *ptr;
-    ptr = tcc_malloc(strlen(str) + 1);
-    strcpy(ptr, str);
-    return ptr;
-}
-
-#define free(p) use_tcc_free(p)
-#define malloc(s) use_tcc_malloc(s)
-#define realloc(p, s) use_tcc_realloc(p, s)
-
-void dynarray_add(void ***ptab, int *nb_ptr, void *data)
-{
-    int nb, nb_alloc;
-    void **pp;
-    
-    nb = *nb_ptr;
-    pp = *ptab;
-    /* every power of two we double array size */
-    if ((nb & (nb - 1)) == 0) {
-        if (!nb)
-            nb_alloc = 1;
-        else
-            nb_alloc = nb * 2;
-        pp = tcc_realloc(pp, nb_alloc * sizeof(void *));
-        if (!pp)
-            error("memory full");
-        *ptab = pp;
-    }
-    pp[nb++] = data;
-    *nb_ptr = nb;
-}
-
-void dynarray_reset(void *pp, int *n)
-{
-    void **p;
-    for (p = *(void***)pp; *n; ++p, --*n)
-        if (*p)
-            tcc_free(*p);
-    tcc_free(*(void**)pp);
-    *(void**)pp = NULL;
 }
 
 /* symbol allocator */
@@ -740,46 +614,6 @@ static void greloc(Section *s, Sym *sym, unsigned long offset, int type)
     put_elf_reloc(symtab_section, s, offset, type, sym->c);
 }
 
-static inline int isid(int c)
-{
-    return (c >= 'a' && c <= 'z') ||
-        (c >= 'A' && c <= 'Z') ||
-        c == '_';
-}
-
-static inline int isnum(int c)
-{
-    return c >= '0' && c <= '9';
-}
-
-static inline int isoct(int c)
-{
-    return c >= '0' && c <= '7';
-}
-
-static inline int toup(int c)
-{
-    if (c >= 'a' && c <= 'z')
-        return c - 'a' + 'A';
-    else
-        return c;
-}
-
-static void strcat_vprintf(char *buf, int buf_size, const char *fmt, va_list ap)
-{
-    int len;
-    len = strlen(buf);
-    vsnprintf(buf + len, buf_size - len, fmt, ap);
-}
-
-static void strcat_printf(char *buf, int buf_size, const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    strcat_vprintf(buf, buf_size, fmt, ap);
-    va_end(ap);
-}
-
 void error1(TCCState *s1, int is_warning, const char *fmt, va_list ap)
 {
     char buf[2048];
@@ -879,95 +713,6 @@ static void test_lvalue(void)
 {
     if (!(vtop->r & VT_LVAL))
         expect("lvalue");
-}
-
-/* CString handling */
-
-static void cstr_realloc(CString *cstr, int new_size)
-{
-    int size;
-    void *data;
-
-    size = cstr->size_allocated;
-    if (size == 0)
-        size = 8; /* no need to allocate a too small first string */
-    while (size < new_size)
-        size = size * 2;
-    data = tcc_realloc(cstr->data_allocated, size);
-    if (!data)
-        error("memory full");
-    cstr->data_allocated = data;
-    cstr->size_allocated = size;
-    cstr->data = data;
-}
-
-/* add a byte */
-static inline void cstr_ccat(CString *cstr, int ch)
-{
-    int size;
-    size = cstr->size + 1;
-    if (size > cstr->size_allocated)
-        cstr_realloc(cstr, size);
-    ((unsigned char *)cstr->data)[size - 1] = ch;
-    cstr->size = size;
-}
-
-static void cstr_cat(CString *cstr, const char *str)
-{
-    int c;
-    for(;;) {
-        c = *str;
-        if (c == '\0')
-            break;
-        cstr_ccat(cstr, c);
-        str++;
-    }
-}
-
-/* add a wide char */
-static void cstr_wccat(CString *cstr, int ch)
-{
-    int size;
-    size = cstr->size + sizeof(nwchar_t);
-    if (size > cstr->size_allocated)
-        cstr_realloc(cstr, size);
-    *(nwchar_t *)(((unsigned char *)cstr->data) + size - sizeof(nwchar_t)) = ch;
-    cstr->size = size;
-}
-
-static void cstr_new(CString *cstr)
-{
-    memset(cstr, 0, sizeof(CString));
-}
-
-/* free string and reset it to NULL */
-static void cstr_free(CString *cstr)
-{
-    tcc_free(cstr->data_allocated);
-    cstr_new(cstr);
-}
-
-#define cstr_reset(cstr) cstr_free(cstr)
-
-/* XXX: unicode ? */
-static void add_char(CString *cstr, int c)
-{
-    if (c == '\'' || c == '\"' || c == '\\') {
-        /* XXX: could be more precise if char or string */
-        cstr_ccat(cstr, '\\');
-    }
-    if (c >= 32 && c <= 126) {
-        cstr_ccat(cstr, c);
-    } else {
-        cstr_ccat(cstr, '\\');
-        if (c == '\n') {
-            cstr_ccat(cstr, 'n');
-        } else {
-            cstr_ccat(cstr, '0' + ((c >> 6) & 7));
-            cstr_ccat(cstr, '0' + ((c >> 3) & 7));
-            cstr_ccat(cstr, '0' + (c & 7));
-        }
-    }
 }
 
 /* push, without hashing */
@@ -1722,13 +1467,6 @@ int tcc_run(TCCState *s1, int argc, char **argv)
     ret = (*prog_main)(argc, argv);
     tcc_free(ptr);
     return ret;
-}
-
-void tcc_memstats(void)
-{
-#ifdef MEM_DEBUG
-    printf("memory in use: %d\n", mem_cur_size);
-#endif
 }
 
 static void tcc_cleanup(void)

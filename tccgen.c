@@ -18,14 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-void swap(int *p, int *q)
-{
-    int t;
-    t = *p;
-    *p = *q;
-    *q = t;
-}
-
 void vsetc(CType *type, int r, CValue *vc)
 {
     int v;
