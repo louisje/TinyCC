@@ -58,7 +58,7 @@ void vpushll(long long v)
 }
 
 /* Return a static symbol pointing to a section */
-static Sym *get_sym_ref(CType *type, Section *sec, 
+Sym *get_sym_ref(CType *type, Section *sec, 
                         unsigned long offset, unsigned long size)
 {
     int v;
@@ -73,7 +73,7 @@ static Sym *get_sym_ref(CType *type, Section *sec,
 }
 
 /* push a reference to a section offset by adding a dummy symbol */
-static void vpush_ref(CType *type, Section *sec, unsigned long offset, unsigned long size)
+void vpush_ref(CType *type, Section *sec, unsigned long offset, unsigned long size)
 {
     CValue cval;
 
@@ -83,7 +83,7 @@ static void vpush_ref(CType *type, Section *sec, unsigned long offset, unsigned 
 }
 
 /* define a new external reference to a symbol 'v' of type 'u' */
-static Sym *external_global_sym(int v, CType *type, int r)
+Sym *external_global_sym(int v, CType *type, int r)
 {
     Sym *s;
 
@@ -98,7 +98,7 @@ static Sym *external_global_sym(int v, CType *type, int r)
 }
 
 /* define a new external reference to a symbol 'v' of type 'u' */
-static Sym *external_sym(int v, CType *type, int r)
+Sym *external_sym(int v, CType *type, int r)
 {
     Sym *s;
 
@@ -116,7 +116,7 @@ static Sym *external_sym(int v, CType *type, int r)
 }
 
 /* push a reference to global symbol v */
-static void vpush_global_sym(CType *type, int v)
+void vpush_global_sym(CType *type, int v)
 {
     Sym *sym;
     CValue cval;
@@ -1175,13 +1175,13 @@ void gen_opif(int op)
     }
 }
 
-static int pointed_size(CType *type)
+int pointed_size(CType *type)
 {
     int align;
     return type_size(pointed_type(type), &align);
 }
 
-static inline int is_null_pointer(SValue *p)
+inline int is_null_pointer(SValue *p)
 {
     if ((p->r & (VT_VALMASK | VT_LVAL | VT_SYM)) != VT_CONST)
         return 0;
@@ -1189,14 +1189,14 @@ static inline int is_null_pointer(SValue *p)
         ((p->type.t & VT_BTYPE) == VT_LLONG && p->c.ll == 0);
 }
 
-static inline int is_integer_btype(int bt)
+inline int is_integer_btype(int bt)
 {
     return (bt == VT_BYTE || bt == VT_SHORT || 
             bt == VT_INT || bt == VT_LLONG);
 }
 
 /* check types for comparison or substraction of pointers */
-static void check_comparison_pointer_types(SValue *p1, SValue *p2, int op)
+void check_comparison_pointer_types(SValue *p1, SValue *p2, int op)
 {
     CType *type1, *type2, tmp_type1, tmp_type2;
     int bt1, bt2;
@@ -1468,7 +1468,7 @@ void force_charshort_cast(int t)
 }
 
 /* cast 'vtop' to 'type'. Casting to bitfields is forbidden. */
-static void gen_cast(CType *type)
+void gen_cast(CType *type)
 {
     int sbt, dbt, sf, df, c, p;
 
@@ -1649,7 +1649,7 @@ static void gen_cast(CType *type)
 }
 
 /* return type size. Put alignment at 'a' */
-static int type_size(CType *type, int *a)
+int type_size(CType *type, int *a)
 {
     Sym *s;
     int bt;
@@ -1709,13 +1709,13 @@ static int type_size(CType *type, int *a)
 }
 
 /* return the pointed type of t */
-static inline CType *pointed_type(CType *type)
+inline CType *pointed_type(CType *type)
 {
     return &type->ref->type;
 }
 
 /* modify type so that its it is a pointer to type. */
-static void mk_pointer(CType *type)
+void mk_pointer(CType *type)
 {
     Sym *s;
     s = sym_push(SYM_FIELD, type, 0, -1);
@@ -1724,7 +1724,7 @@ static void mk_pointer(CType *type)
 }
 
 /* compare function types. OLD functions match any new functions */
-static int is_compatible_func(CType *type1, CType *type2)
+int is_compatible_func(CType *type1, CType *type2)
 {
     Sym *s1, *s2;
 
@@ -1758,7 +1758,7 @@ static int is_compatible_func(CType *type1, CType *type2)
 
    - enums are not checked as gcc __builtin_types_compatible_p () 
  */
-static int compare_types(CType *type1, CType *type2, int unqualified)
+int compare_types(CType *type1, CType *type2, int unqualified)
 {
     int bt1, t1, t2;
 
@@ -1790,14 +1790,14 @@ static int compare_types(CType *type1, CType *type2, int unqualified)
 /* return true if type1 and type2 are exactly the same (including
    qualifiers). 
 */
-static int is_compatible_types(CType *type1, CType *type2)
+int is_compatible_types(CType *type1, CType *type2)
 {
     return compare_types(type1,type2,0);
 }
 
 /* return true if type1 and type2 are the same (ignoring qualifiers).
 */
-static int is_compatible_parameter_types(CType *type1, CType *type2)
+int is_compatible_parameter_types(CType *type1, CType *type2)
 {
     return compare_types(type1,type2,1);
 }
@@ -1900,7 +1900,7 @@ void type_to_str(char *buf, int buf_size,
 
 /* verify type compatibility to store vtop in 'dt' type, and generate
    casts if needed. */
-static void gen_assign_cast(CType *dt)
+void gen_assign_cast(CType *dt)
 {
     CType *st, *type1, *type2, tmp_type1, tmp_type2;
     char buf1[256], buf2[256];
@@ -2164,7 +2164,7 @@ void inc(int post, int c)
    - unused : currently ignored, but may be used someday.
    - regparm(n) : pass function parameters in registers (i386 only)
  */
-static void parse_attribute(AttributeDef *ad)
+void parse_attribute(AttributeDef *ad)
 {
     int t, n;
     
@@ -2272,7 +2272,7 @@ static void parse_attribute(AttributeDef *ad)
 }
 
 /* enum/struct/union declaration. u is either VT_ENUM or VT_STRUCT */
-static void struct_decl(CType *type, int u)
+void struct_decl(CType *type, int u)
 {
     int a, v, size, align, maxalign, c, offset;
     int bit_size, bit_pos, bsize, bt, lbit_pos, prevbt;
@@ -2474,7 +2474,7 @@ static void struct_decl(CType *type, int u)
 /* return 0 if no type declaration. otherwise, return the basic type
    and skip it. 
  */
-static int parse_btype(CType *type, AttributeDef *ad)
+int parse_btype(CType *type, AttributeDef *ad)
 {
     int t, u, type_found, typespec_found, typedef_found;
     Sym *s;
@@ -2652,7 +2652,7 @@ the_end:
 
 /* convert a function parameter type (array to pointer and function to
    function pointer) */
-static inline void convert_parameter_type(CType *pt)
+inline void convert_parameter_type(CType *pt)
 {
     /* remove const and volatile qualifiers (XXX: const could be used
        to indicate a const function parameter */
@@ -2664,7 +2664,7 @@ static inline void convert_parameter_type(CType *pt)
     }
 }
 
-static void post_type(CType *type, AttributeDef *ad)
+void post_type(CType *type, AttributeDef *ad)
 {
     int n, l, t1, arg_size, align;
     Sym **plast, *s, *first;
@@ -2765,7 +2765,7 @@ static void post_type(CType *type, AttributeDef *ad)
    attribute definition of the basic type. It can be modified by
    type_decl(). 
  */
-static void type_decl(CType *type, AttributeDef *ad, int *v, int td)
+void type_decl(CType *type, AttributeDef *ad, int *v, int td)
 {
     Sym *s;
     CType type1, *type2;
@@ -2840,7 +2840,7 @@ static void type_decl(CType *type, AttributeDef *ad, int *v, int td)
 }
 
 /* compute the lvalue VT_LVAL_xxx needed to match type t. */
-static int lvalue_type(int t)
+int lvalue_type(int t)
 {
     int bt, r;
     r = VT_LVAL;
@@ -2857,7 +2857,7 @@ static int lvalue_type(int t)
 }
 
 /* indirection with full error checking and bound check */
-static void indir(void)
+void indir(void)
 {
     if ((vtop->type.t & VT_BTYPE) != VT_PTR) {
         if ((vtop->type.t & VT_BTYPE) == VT_FUNC)
@@ -2878,7 +2878,7 @@ static void indir(void)
 }
 
 /* pass a parameter to a function and do type checking and casting */
-static void gfunc_param_typed(Sym *func, Sym *arg)
+void gfunc_param_typed(Sym *func, Sym *arg)
 {
     int func_type;
     CType type;
@@ -2902,7 +2902,7 @@ static void gfunc_param_typed(Sym *func, Sym *arg)
 
 /* parse an expression of the form '(type)' or '(expr)' and return its
    type */
-static void parse_expr_type(CType *type)
+void parse_expr_type(CType *type)
 {
     int n;
     AttributeDef ad;
@@ -2916,7 +2916,7 @@ static void parse_expr_type(CType *type)
     skip(')');
 }
 
-static void parse_type(CType *type)
+void parse_type(CType *type)
 {
     AttributeDef ad;
     int n;
@@ -2927,14 +2927,14 @@ static void parse_type(CType *type)
     type_decl(type, &ad, &n, TYPE_ABSTRACT);
 }
 
-static void vpush_tokc(int t)
+void vpush_tokc(int t)
 {
     CType type;
     type.t = t;
     vsetc(&type, VT_CONST, &tokc);
 }
 
-static void unary(void)
+void unary(void)
 {
     int n, t, align, size, r;
     CType type;
@@ -3374,7 +3374,7 @@ static void unary(void)
     }
 }
 
-static void uneq(void)
+void uneq(void)
 {
     int t;
     
@@ -3397,7 +3397,7 @@ static void uneq(void)
     }
 }
 
-static void expr_prod(void)
+void expr_prod(void)
 {
     int t;
 
@@ -3410,7 +3410,7 @@ static void expr_prod(void)
     }
 }
 
-static void expr_sum(void)
+void expr_sum(void)
 {
     int t;
 
@@ -3423,7 +3423,7 @@ static void expr_sum(void)
     }
 }
 
-static void expr_shift(void)
+void expr_shift(void)
 {
     int t;
 
@@ -3436,7 +3436,7 @@ static void expr_shift(void)
     }
 }
 
-static void expr_cmp(void)
+void expr_cmp(void)
 {
     int t;
 
@@ -3450,7 +3450,7 @@ static void expr_cmp(void)
     }
 }
 
-static void expr_cmpeq(void)
+void expr_cmpeq(void)
 {
     int t;
 
@@ -3463,7 +3463,7 @@ static void expr_cmpeq(void)
     }
 }
 
-static void expr_and(void)
+void expr_and(void)
 {
     expr_cmpeq();
     while (tok == '&') {
@@ -3473,7 +3473,7 @@ static void expr_and(void)
     }
 }
 
-static void expr_xor(void)
+void expr_xor(void)
 {
     expr_and();
     while (tok == '^') {
@@ -3483,7 +3483,7 @@ static void expr_xor(void)
     }
 }
 
-static void expr_or(void)
+void expr_or(void)
 {
     expr_xor();
     while (tok == '|') {
@@ -3494,7 +3494,7 @@ static void expr_or(void)
 }
 
 /* XXX: fix this mess */
-static void expr_land_const(void)
+void expr_land_const(void)
 {
     expr_or();
     while (tok == TOK_LAND) {
@@ -3505,7 +3505,7 @@ static void expr_land_const(void)
 }
 
 /* XXX: fix this mess */
-static void expr_lor_const(void)
+void expr_lor_const(void)
 {
     expr_land_const();
     while (tok == TOK_LOR) {
@@ -3516,7 +3516,7 @@ static void expr_lor_const(void)
 }
 
 /* only used if non constant */
-static void expr_land(void)
+void expr_land(void)
 {
     int t;
 
@@ -3536,7 +3536,7 @@ static void expr_land(void)
     }
 }
 
-static void expr_lor(void)
+void expr_lor(void)
 {
     int t;
 
@@ -3557,7 +3557,7 @@ static void expr_lor(void)
 }
 
 /* XXX: better constant handling */
-static void expr_eq(void)
+void expr_eq(void)
 {
     int tt, u, r1, r2, rc, t1, t2, bt1, bt2;
     SValue sv;
@@ -3698,7 +3698,7 @@ static void expr_eq(void)
     }
 }
 
-static void gexpr(void)
+void gexpr(void)
 {
     while (1) {
         expr_eq();
@@ -3710,7 +3710,7 @@ static void gexpr(void)
 }
 
 /* parse an expression and return its type without any side effect. */
-static void expr_type(CType *type)
+void expr_type(CType *type)
 {
     int saved_nocode_wanted;
 
@@ -3724,7 +3724,7 @@ static void expr_type(CType *type)
 
 /* parse a unary expression and return its type without any side
    effect. */
-static void unary_type(CType *type)
+void unary_type(CType *type)
 {
     int a;
 
@@ -3737,7 +3737,7 @@ static void unary_type(CType *type)
 }
 
 /* parse a constant expression and return value in vtop.  */
-static void expr_const1(void)
+void expr_const1(void)
 {
     int a;
     a = const_wanted;
@@ -3747,7 +3747,7 @@ static void expr_const1(void)
 }
 
 /* parse an integer constant and return its value. */
-static int expr_const(void)
+int expr_const(void)
 {
     int c;
     expr_const1();
@@ -3760,7 +3760,7 @@ static int expr_const(void)
 
 /* return the label token if current token is a label, otherwise
    return zero */
-static int is_label(void)
+int is_label(void)
 {
     int last_tok;
 
@@ -3779,7 +3779,7 @@ static int is_label(void)
     }
 }
 
-static void block(int *bsym, int *csym, int *case_sym, int *def_sym, 
+void block(int *bsym, int *csym, int *case_sym, int *def_sym, 
                   int case_reg, int is_expr)
 {
     int a, b, c, d;
@@ -4127,7 +4127,7 @@ static void block(int *bsym, int *csym, int *case_sym, int *def_sym,
    address. cur_index/cur_field is the pointer to the current
    value. 'size_only' is true if only size info is needed (only used
    in arrays) */
-static void decl_designator(CType *type, Section *sec, unsigned long c, 
+void decl_designator(CType *type, Section *sec, unsigned long c, 
                             int *cur_index, Sym **cur_field, 
                             int size_only)
 {
@@ -4248,7 +4248,7 @@ static void decl_designator(CType *type, Section *sec, unsigned long c,
 #define EXPR_ANY   2
 
 /* store a value or an expression directly in global data or in local array */
-static void init_putv(CType *type, Section *sec, unsigned long c, 
+void init_putv(CType *type, Section *sec, unsigned long c, 
                       int v, int expr_type)
 {
     int saved_global_expr, bt, bit_pos, bit_size;
@@ -4341,7 +4341,7 @@ static void init_putv(CType *type, Section *sec, unsigned long c,
 }
 
 /* put zeros for variable based init */
-static void init_putz(CType *t, Section *sec, unsigned long c, int size)
+void init_putz(CType *t, Section *sec, unsigned long c, int size)
 {
     if (sec) {
         /* nothing to do because globals are already set to zero */
@@ -4359,7 +4359,7 @@ static void init_putz(CType *t, Section *sec, unsigned long c, int size)
    allocation. 'first' is true if array '{' must be read (multi
    dimension implicit array init handling). 'size_only' is true if
    size only evaluation is wanted (only for arrays). */
-static void decl_initializer(CType *type, Section *sec, unsigned long c, 
+void decl_initializer(CType *type, Section *sec, unsigned long c, 
                              int first, int size_only)
 {
     int index, array_length, n, no_oblock, nb, parlevel, i;
@@ -4569,7 +4569,7 @@ static void decl_initializer(CType *type, Section *sec, unsigned long c,
    parsed. If 'v' is zero, then a reference to the new object is put
    in the value stack. If 'has_init' is 2, a special parsing is done
    to handle string constants. */
-static void decl_initializer_alloc(CType *type, AttributeDef *ad, int r, 
+void decl_initializer_alloc(CType *type, AttributeDef *ad, int r, 
                                    int has_init, int v, int scope)
 {
     int size, align, addr, data_offset;
@@ -4794,7 +4794,7 @@ void put_func_debug(Sym *sym)
 
 /* parse an old style function declaration list */
 /* XXX: check multiple parameter */
-static void func_decl_list(Sym *func_sym)
+void func_decl_list(Sym *func_sym)
 {
     AttributeDef ad;
     int v;
@@ -4842,7 +4842,7 @@ static void func_decl_list(Sym *func_sym)
 
 /* parse a function defined by symbol 'sym' and generate its code in
    'cur_text_section' */
-static void gen_function(Sym *sym)
+void gen_function(Sym *sym)
 {
     int saved_nocode_wanted = nocode_wanted;
     nocode_wanted = 0;
@@ -4879,7 +4879,7 @@ static void gen_function(Sym *sym)
     nocode_wanted = saved_nocode_wanted;
 }
 
-static void gen_inline_functions(void)
+void gen_inline_functions(void)
 {
     Sym *sym;
     CType *type;
@@ -4931,7 +4931,7 @@ static void gen_inline_functions(void)
 }
 
 /* 'l' is VT_LOCAL or VT_CONST to define default storage type */
-static void decl(int l)
+void decl(int l)
 {
     int v, has_init, r;
     CType type, btype;

@@ -33,7 +33,8 @@
 /* XXX: DLL with PLT would only work with x86-64 for now */
 //#define TCC_OUTPUT_DLL_WITH_PLT
 
-static int put_elf_str(Section *s, const char *sym)
+// static int put_elf_str(Section *s, const char *sym)
+int put_elf_str(Section *s, const char *sym)
 {
     int offset, len;
     char *ptr;
@@ -46,7 +47,7 @@ static int put_elf_str(Section *s, const char *sym)
 }
 
 /* elf symbol hashing function */
-static unsigned long elf_hash(const unsigned char *name)
+unsigned long elf_hash(const unsigned char *name)
 {
     unsigned long h = 0, g;
     
@@ -62,7 +63,7 @@ static unsigned long elf_hash(const unsigned char *name)
 
 /* rebuild hash table of section s */
 /* NOTE: we do factorize the hash table code to go faster */
-static void rebuild_hash(Section *s, unsigned int nb_buckets)
+void rebuild_hash(Section *s, unsigned int nb_buckets)
 {
     ElfW(Sym) *sym;
     int *ptr, *hash, nb_syms, sym_index, h;
@@ -95,7 +96,7 @@ static void rebuild_hash(Section *s, unsigned int nb_buckets)
 }
 
 /* return the symbol number */
-static int put_elf_sym(Section *s, 
+int put_elf_sym(Section *s, 
                        unsigned long value, unsigned long size,
                        int info, int other, int shndx, const char *name)
 {
@@ -145,7 +146,7 @@ static int put_elf_sym(Section *s,
 
 /* find global ELF symbol 'name' and return its index. Return 0 if not
    found. */
-static int find_elf_sym(Section *s, const char *name)
+int find_elf_sym(Section *s, const char *name)
 {
     ElfW(Sym) *sym;
     Section *hs;
@@ -191,7 +192,7 @@ void *tcc_get_symbol_err(TCCState *s, const char *name)
 
 /* add an elf symbol : check if it is already defined and patch
    it. Return symbol index. NOTE that sh_num can be SHN_UNDEF. */
-static int add_elf_sym(Section *s, unsigned long value, unsigned long size,
+int add_elf_sym(Section *s, unsigned long value, unsigned long size,
                        int info, int other, int sh_num, const char *name)
 {
     ElfW(Sym) *esym;
@@ -264,7 +265,7 @@ static int add_elf_sym(Section *s, unsigned long value, unsigned long size,
 }
 
 /* put relocation */
-static void put_elf_reloc(Section *symtab, Section *s, unsigned long offset,
+void put_elf_reloc(Section *symtab, Section *s, unsigned long offset,
                           int type, int symbol)
 {
     char buf[256];
@@ -301,7 +302,7 @@ typedef struct {
     unsigned int n_value;        /* value of symbol */
 } Stab_Sym;
 
-static void put_stabs(const char *str, int type, int other, int desc, 
+void put_stabs(const char *str, int type, int other, int desc, 
                       unsigned long value)
 {
     Stab_Sym *sym;
@@ -318,7 +319,7 @@ static void put_stabs(const char *str, int type, int other, int desc,
     sym->n_value = value;
 }
 
-static void put_stabs_r(const char *str, int type, int other, int desc, 
+void put_stabs_r(const char *str, int type, int other, int desc, 
                         unsigned long value, Section *sec, int sym_index)
 {
     put_stabs(str, type, other, desc, value);
@@ -327,12 +328,12 @@ static void put_stabs_r(const char *str, int type, int other, int desc,
                   R_DATA_32, sym_index);
 }
 
-static void put_stabn(int type, int other, int desc, int value)
+void put_stabn(int type, int other, int desc, int value)
 {
     put_stabs(NULL, type, other, desc, value);
 }
 
-static void put_stabd(int type, int other, int desc)
+void put_stabd(int type, int other, int desc)
 {
     put_stabs(NULL, type, other, desc, 0);
 }
@@ -341,7 +342,7 @@ static void put_stabd(int type, int other, int desc)
    the global and weak ones. Since TCC cannot sort it while generating
    the code, we must do it after. All the relocation tables are also
    modified to take into account the symbol table sorting */
-static void sort_syms(TCCState *s1, Section *s)
+void sort_syms(TCCState *s1, Section *s)
 {
     int *old_to_new_syms;
     ElfW(Sym) *new_syms;
@@ -402,7 +403,7 @@ static void sort_syms(TCCState *s1, Section *s)
 }
 
 /* relocate common symbols in the .bss section */
-static void relocate_common_syms(void)
+void relocate_common_syms(void)
 {
     ElfW(Sym) *sym, *sym_end;
     unsigned long offset, align;
@@ -426,7 +427,7 @@ static void relocate_common_syms(void)
 
 /* relocate symbol table, resolve undefined symbols if do_resolve is
    true and output error if undefined symbol. */
-static void relocate_syms(TCCState *s1, int do_resolve)
+void relocate_syms(TCCState *s1, int do_resolve)
 {
     ElfW(Sym) *sym, *esym, *sym_end;
     int sym_bind, sh_num, sym_index;
@@ -478,7 +479,7 @@ static void relocate_syms(TCCState *s1, int do_resolve)
 
 #ifdef TCC_TARGET_X86_64
 #define JMP_TABLE_ENTRY_SIZE 14
-static unsigned long add_jmp_table(TCCState *s1, unsigned long val)
+unsigned long add_jmp_table(TCCState *s1, unsigned long val)
 {
     char *p = s1->runtime_plt_and_got + s1->runtime_plt_and_got_offset;
     s1->runtime_plt_and_got_offset += JMP_TABLE_ENTRY_SIZE;
@@ -490,7 +491,7 @@ static unsigned long add_jmp_table(TCCState *s1, unsigned long val)
     return (unsigned long)p;
 }
 
-static unsigned long add_got_table(TCCState *s1, unsigned long val)
+unsigned long add_got_table(TCCState *s1, unsigned long val)
 {
     unsigned long *p =(unsigned long *)(s1->runtime_plt_and_got +
                                         s1->runtime_plt_and_got_offset);
@@ -501,7 +502,7 @@ static unsigned long add_got_table(TCCState *s1, unsigned long val)
 #endif
 
 /* relocate a given section (CPU dependent) */
-static void relocate_section(TCCState *s1, Section *s)
+void relocate_section(TCCState *s1, Section *s)
 {
     Section *sr;
     ElfW_Rel *rel, *rel_end, *qrel;
@@ -735,7 +736,7 @@ static void relocate_section(TCCState *s1, Section *s)
 }
 
 /* relocate relocation table in 'sr' */
-static void relocate_rel(TCCState *s1, Section *sr)
+void relocate_rel(TCCState *s1, Section *sr)
 {
     Section *s;
     ElfW_Rel *rel, *rel_end;
@@ -751,7 +752,7 @@ static void relocate_rel(TCCState *s1, Section *sr)
 
 /* count the number of dynamic relocations so that we can reserve
    their space */
-static int prepare_dynamic_rel(TCCState *s1, Section *sr)
+int prepare_dynamic_rel(TCCState *s1, Section *sr)
 {
     ElfW_Rel *rel, *rel_end;
     int sym_index, esym_index, type, count;
@@ -792,7 +793,7 @@ static int prepare_dynamic_rel(TCCState *s1, Section *sr)
     return count;
 }
 
-static void put_got_offset(TCCState *s1, int index, unsigned long val)
+void put_got_offset(TCCState *s1, int index, unsigned long val)
 {
     int n;
     unsigned long *tab;
@@ -814,7 +815,7 @@ static void put_got_offset(TCCState *s1, int index, unsigned long val)
 }
 
 /* XXX: suppress that */
-static void put32(unsigned char *p, uint32_t val)
+void put32(unsigned char *p, uint32_t val)
 {
     p[0] = val;
     p[1] = val >> 8;
@@ -824,13 +825,13 @@ static void put32(unsigned char *p, uint32_t val)
 
 #if defined(TCC_TARGET_I386) || defined(TCC_TARGET_ARM) || \
     defined(TCC_TARGET_X86_64)
-static uint32_t get32(unsigned char *p)
+uint32_t get32(unsigned char *p)
 {
     return p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
 }
 #endif
 
-static void build_got(TCCState *s1)
+void build_got(TCCState *s1)
 {
     unsigned char *ptr;
 
@@ -860,7 +861,7 @@ static void build_got(TCCState *s1)
 
 /* put a got entry corresponding to a symbol in symtab_section. 'size'
    and 'info' can be modifed if more precise info comes from the DLL */
-static void put_got_entry(TCCState *s1,
+void put_got_entry(TCCState *s1,
                           int reloc_type, unsigned long size, int info, 
                           int sym_index)
 {
@@ -983,7 +984,7 @@ static void put_got_entry(TCCState *s1,
 }
 
 /* build GOT and PLT entries */
-static void build_got_entries(TCCState *s1)
+void build_got_entries(TCCState *s1)
 {
     Section *s, *symtab;
     ElfW_Rel *rel, *rel_end;
@@ -1091,7 +1092,7 @@ static void build_got_entries(TCCState *s1)
     }
 }
 
-static Section *new_symtab(TCCState *s1,
+Section *new_symtab(TCCState *s1,
                            const char *symtab_name, int sh_type, int sh_flags,
                            const char *strtab_name, 
                            const char *hash_name, int hash_sh_flags)
@@ -1121,7 +1122,7 @@ static Section *new_symtab(TCCState *s1,
 }
 
 /* put dynamic tag */
-static void put_dt(Section *dynamic, int dt, unsigned long val)
+void put_dt(Section *dynamic, int dt, unsigned long val)
 {
     ElfW(Dyn) *dyn;
     dyn = section_ptr_add(dynamic, sizeof(ElfW(Dyn)));
@@ -1129,7 +1130,7 @@ static void put_dt(Section *dynamic, int dt, unsigned long val)
     dyn->d_un.d_val = val;
 }
 
-static void add_init_array_defines(TCCState *s1, const char *section_name)
+void add_init_array_defines(TCCState *s1, const char *section_name)
 {
     Section *s;
     long end_offset;
@@ -1158,7 +1159,7 @@ static void add_init_array_defines(TCCState *s1, const char *section_name)
 }
 
 /* add tcc runtime libraries */
-static void tcc_add_runtime(TCCState *s1)
+void tcc_add_runtime(TCCState *s1)
 {
 #if defined(CONFIG_TCC_BCHECK) || !defined(CONFIG_USE_LIBGCC)
     char buf[1024];
@@ -1214,7 +1215,7 @@ static void tcc_add_runtime(TCCState *s1)
 /* add various standard linker symbols (must be done after the
    sections are filled (for example after allocating common
    symbols)) */
-static void tcc_add_linker_symbols(TCCState *s1)
+void tcc_add_linker_symbols(TCCState *s1)
 {
     char buf[1024];
     int i;
@@ -1284,7 +1285,7 @@ static char elf_interp[] = "/lib/ld-uClibc.so.0";
 static char elf_interp[] = "/lib/ld-linux.so.2";
 #endif
 
-static void tcc_output_binary(TCCState *s1, FILE *f,
+void tcc_output_binary(TCCState *s1, FILE *f,
                               const int *section_order)
 {
     Section *s;
@@ -2013,7 +2014,7 @@ int tcc_output_file(TCCState *s, const char *filename)
     return ret;
 }
 
-static void *load_data(int fd, unsigned long file_offset, unsigned long size)
+void *load_data(int fd, unsigned long file_offset, unsigned long size)
 {
     void *data;
 
@@ -2032,7 +2033,7 @@ typedef struct SectionMergeInfo {
 
 /* load an object file and merge it with current files */
 /* XXX: handle correctly stab (debug) info */
-static int tcc_load_object_file(TCCState *s1, 
+int tcc_load_object_file(TCCState *s1, 
                                 int fd, unsigned long file_offset)
 { 
     ElfW(Ehdr) ehdr;
@@ -2313,13 +2314,13 @@ typedef struct ArchiveHeader {
     char ar_fmag[2];            /* should contain ARFMAG */
 } ArchiveHeader;
 
-static int get_be32(const uint8_t *b)
+int get_be32(const uint8_t *b)
 {
     return b[3] | (b[2] << 8) | (b[1] << 16) | (b[0] << 24);
 }
 
 /* load only the objects which resolve undefined symbols */
-static int tcc_load_alacarte(TCCState *s1, int fd, int size)
+int tcc_load_alacarte(TCCState *s1, int fd, int size)
 {
     int i, bound, nsyms, sym_index, off, ret;
     uint8_t *data;
@@ -2363,7 +2364,7 @@ static int tcc_load_alacarte(TCCState *s1, int fd, int size)
 }
 
 /* load a '.a' file */
-static int tcc_load_archive(TCCState *s1, int fd)
+int tcc_load_archive(TCCState *s1, int fd)
 {
     ArchiveHeader hdr;
     char ar_size[11];
@@ -2417,7 +2418,7 @@ static int tcc_load_archive(TCCState *s1, int fd)
 /* load a DLL and all referenced DLLs. 'level = 0' means that the DLL
    is referenced by the user (so it should be added as DT_NEEDED in
    the generated ELF file) */
-static int tcc_load_dll(TCCState *s1, int fd, const char *filename, int level)
+int tcc_load_dll(TCCState *s1, int fd, const char *filename, int level)
 { 
     ElfW(Ehdr) ehdr;
     ElfW(Shdr) *shdr, *sh, *sh1;
@@ -2534,7 +2535,7 @@ static int tcc_load_dll(TCCState *s1, int fd, const char *filename, int level)
 #define LD_TOK_EOF  (-1)
 
 /* return next ld script token */
-static int ld_next(TCCState *s1, char *name, int name_size)
+int ld_next(TCCState *s1, char *name, int name_size)
 {
     int c;
     char *q;
@@ -2652,7 +2653,7 @@ static int ld_next(TCCState *s1, char *name, int name_size)
     return c;
 }
 
-static int ld_add_file_list(TCCState *s1, int as_needed)
+int ld_add_file_list(TCCState *s1, int as_needed)
 {
     char filename[1024];
     int t, ret;
@@ -2690,7 +2691,7 @@ static int ld_add_file_list(TCCState *s1, int as_needed)
 
 /* interpret a subset of GNU ldscripts to handle the dummy libc.so
    files */
-static int tcc_load_ldscript(TCCState *s1)
+int tcc_load_ldscript(TCCState *s1)
 {
     char cmd[64];
     char filename[1024];

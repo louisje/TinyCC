@@ -17,6 +17,8 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+#ifndef TCC_H
+#define TCC_H
 
 #define _GNU_SOURCE
 #include "config.h"
@@ -68,7 +70,9 @@
 #define O_BINARY 0
 #endif
 
+#include "lib0.h"
 #include "libtcc.h"
+#include "symbol.h"
 
 /* parser debug */
 //#define PARSE_DEBUG
@@ -118,12 +122,6 @@
 #define CONFIG_TCC_BACKTRACE
 #endif
 
-#define FALSE 0
-#define false 0
-#define TRUE 1
-#define true 1
-typedef int BOOL;
-
 /* path to find crt1.o, crti.o and crtn.o. Only needed when generating
    executables or dlls */
 #define CONFIG_TCC_CRT_PREFIX CONFIG_SYSROOT "/usr/lib"
@@ -138,103 +136,11 @@ typedef int BOOL;
 #define TOK_ALLOC_INCR      512  /* must be a power of two */
 #define TOK_MAX_SIZE        4 /* token max size in int unit when stored in string */
 
-/* token symbol management */
-typedef struct TokenSym {
-    struct TokenSym *hash_next;
-    struct Sym *sym_define; /* direct pointer to define */
-    struct Sym *sym_label; /* direct pointer to label */
-    struct Sym *sym_struct; /* direct pointer to structure */
-    struct Sym *sym_identifier; /* direct pointer to identifier */
-    int tok; /* token number */
-    int len;
-    char str[1];
-} TokenSym;
-
 #ifdef TCC_TARGET_PE
 typedef unsigned short nwchar_t;
 #else
 typedef int nwchar_t;
 #endif
-/*
-typedef struct CString {
-    int size; // size in bytes 
-    void *data; // either 'char *' or 'nwchar_t *'
-    int size_allocated;
-    void *data_allocated; // if non NULL, data has been malloced
-} CString;
-*/
-/* type definition */
-typedef struct CType {
-    int t;
-    struct Sym *ref;
-} CType;
-
-/* constant value */
-typedef union CValue {
-    long double ld;
-    double d;
-    float f;
-    int i;
-    unsigned int ui;
-    unsigned int ul; /* address (should be unsigned long on 64 bit cpu) */
-    long long ll;
-    unsigned long long ull;
-    struct CString *cstr;
-    void *ptr;
-    int tab[1];
-} CValue;
-
-/* value on stack */
-typedef struct SValue {
-    CType type;      /* type */
-    unsigned short r;      /* register + flags */
-    unsigned short r2;     /* second register, used for 'long long'
-                              type. If not used, set to VT_CONST */
-    CValue c;              /* constant, if VT_CONST */
-    struct Sym *sym;       /* symbol, if (VT_SYM | VT_CONST) */
-} SValue;
-
-/* symbol management */
-typedef struct Sym {
-    int v;    /* symbol token */
-    long r;    /* associated register */
-    long c;    /* associated number */
-    CType type;    /* associated type */
-    struct Sym *next; /* next related symbol */
-    struct Sym *prev; /* prev symbol in stack */
-    struct Sym *prev_tok; /* previous symbol for this token */
-} Sym;
-
-/* section definition */
-/* XXX: use directly ELF structure for parameters ? */
-/* special flag to indicate that the section should not be linked to
-   the other ones */
-#define SHF_PRIVATE 0x80000000
-
-/* special flag, too */
-#define SECTION_ABS ((void *)1)
-
-typedef struct Section {
-    unsigned long data_offset; /* current data offset */
-    unsigned char *data;       /* section data */
-    unsigned long data_allocated; /* used for realloc() handling */
-    int sh_name;             /* elf section name (only used during output) */
-    int sh_num;              /* elf section number */
-    int sh_type;             /* elf section type */
-    int sh_flags;            /* elf section flags */
-    int sh_info;             /* elf section info */
-    int sh_addralign;        /* elf section alignment */
-    int sh_entsize;          /* elf entry size */
-    unsigned long sh_size;   /* section size (only used during output) */
-    unsigned long sh_addr;      /* address at which the section is relocated */
-    unsigned long sh_offset;    /* file offset */
-    int nb_hashed_syms;      /* used to resize the hash table */
-    struct Section *link;    /* link to another section */
-    struct Section *reloc;   /* corresponding section for relocation, if any */
-    struct Section *hash;     /* hash table for symbols */
-    struct Section *next;
-    char name[1];           /* section name */
-} Section;
 
 typedef struct DLLReference {
     int level;
@@ -364,127 +270,6 @@ typedef struct ASMOperand {
 } ASMOperand;
 
 #endif
-
-struct TCCState {
-    int output_type;
- 
-    BufferedFile **include_stack_ptr;
-    int *ifdef_stack_ptr;
-
-    /* include file handling */
-    char **include_paths;
-    int nb_include_paths;
-    char **sysinclude_paths;
-    int nb_sysinclude_paths;
-    CachedInclude **cached_includes;
-    int nb_cached_includes;
-
-    char **library_paths;
-    int nb_library_paths;
-
-    /* array of all loaded dlls (including those referenced by loaded
-       dlls) */
-    DLLReference **loaded_dlls;
-    int nb_loaded_dlls;
-
-    /* sections */
-    Section **sections;
-    int nb_sections; /* number of sections, including first dummy section */
-
-    Section **priv_sections;
-    int nb_priv_sections; /* number of private sections */
-
-    /* got handling */
-    Section *got;
-    Section *plt;
-    unsigned long *got_offsets;
-    int nb_got_offsets;
-    /* give the correspondance from symtab indexes to dynsym indexes */
-    int *symtab_to_dynsym;
-
-    /* temporary dynamic symbol sections (for dll loading) */
-    Section *dynsymtab_section;
-    /* exported dynamic symbol section */
-    Section *dynsym;
-
-    int nostdinc; /* if true, no standard headers are added */
-    int nostdlib; /* if true, no standard libraries are added */
-    int nocommon; /* if true, do not use common symbols for .bss data */
-
-    /* if true, static linking is performed */
-    int static_link;
-
-    /* soname as specified on the command line (-soname) */
-    const char *soname;
-
-    /* if true, all symbols are exported */
-    int rdynamic;
-
-    /* if true, only link in referenced objects from archive */
-    int alacarte_link;
-
-    /* address of text section */
-    unsigned long text_addr;
-    int has_text_addr;
-    
-    /* output format, see TCC_OUTPUT_FORMAT_xxx */
-    int output_format;
-
-    /* C language options */
-    int char_is_unsigned;
-    int leading_underscore;
-    
-    /* warning switches */
-    int warn_write_strings;
-    int warn_unsupported;
-    int warn_error;
-    int warn_none;
-    int warn_implicit_function_declaration;
-
-    /* display some information during compilation */
-    int verbose;
-    /* compile with debug symbol (and use them if error during execution) */
-    int do_debug;
-    /* compile with built-in memory and bounds checker */
-    int do_bounds_check;
-    /* give the path of the tcc libraries */
-    const char *tcc_lib_path;
-
-    /* error handling */
-    void *error_opaque;
-    void (*error_func)(void *opaque, const char *msg);
-    int error_set_jmp_enabled;
-    jmp_buf error_jmp_buf;
-    int nb_errors;
-
-    /* tiny assembler state */
-    Sym *asm_labels;
-
-    /* see include_stack_ptr */
-    BufferedFile *include_stack[INCLUDE_STACK_SIZE];
-
-    /* see ifdef_stack_ptr */
-    int ifdef_stack[IFDEF_STACK_SIZE];
-
-    /* see cached_includes */
-    int cached_includes_hash[CACHED_INCLUDES_HASH_SIZE];
-
-    /* pack stack */
-    int pack_stack[PACK_STACK_SIZE];
-    int *pack_stack_ptr;
-
-    /* output file for preprocessing */
-    FILE *outfile;
-
-    /* for tcc_relocate */
-    int runtime_added;
-
-#ifdef TCC_TARGET_X86_64
-    /* write PLT and GOT here */
-    char *runtime_plt_and_got;
-    unsigned int runtime_plt_and_got_offset;
-#endif
-};
 
 /* The current value can be: */
 #define VT_VALMASK   0x00ff
@@ -724,34 +509,13 @@ extern long double strtold (const char *__nptr, char **__endptr);
 #define PATHCMP strcmp
 #endif
 
-void error(const char *fmt, ...);
-void error_noabort(const char *fmt, ...);
-void warning(const char *fmt, ...);
-
-void tcc_set_lib_path_w32(TCCState *s);
-int tcc_set_flag(TCCState *s, const char *flag_name, int value);
-void tcc_print_stats(TCCState *s, int64_t total_time);
-
-void tcc_free(void *ptr);
-void *tcc_malloc(unsigned long size);
-void *tcc_mallocz(unsigned long size);
-void *tcc_realloc(void *ptr, unsigned long size);
-char *tcc_strdup(const char *str);
-
-char *tcc_basename(const char *name);
-char *tcc_fileextension (const char *name);
-char *pstrcpy(char *buf, int buf_size, const char *s);
-char *pstrcat(char *buf, int buf_size, const char *s);
-void dynarray_add(void ***ptab, int *nb_ptr, void *data);
-void dynarray_reset(void *pp, int *n);
-
 #ifdef CONFIG_TCC_BACKTRACE
 extern int num_callers;
 extern const char **rt_bound_error_msg;
 #endif
 
 /* true if float/double/long double type */
-static inline int is_float(int t)
+inline int is_float(int t)
 {
     int bt;
     bt = t & VT_BTYPE;
@@ -759,8 +523,9 @@ static inline int is_float(int t)
 }
 
 /* space exlcuding newline */
-static inline int is_space(int ch)
+inline int is_space(int ch)
 {
     return ch == ' ' || ch == '\t' || ch == '\v' || ch == '\f' || ch == '\r';
 }
 
+#endif

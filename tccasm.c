@@ -17,8 +17,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+#include "cc0lib.h"
 
-static int asm_get_local_label_name(TCCState *s1, unsigned int n)
+int asm_get_local_label_name(TCCState *s1, unsigned int n)
 {
     char buf[64];
     TokenSym *ts;
@@ -28,12 +29,12 @@ static int asm_get_local_label_name(TCCState *s1, unsigned int n)
     return ts->tok;
 }
 
-static void asm_expr(TCCState *s1, ExprValue *pe);
+void asm_expr(TCCState *s1, ExprValue *pe);
 
 /* We do not use the C expression parser to handle symbols. Maybe the
    C expression parser could be tweaked to do so. */
 
-static void asm_expr_unary(TCCState *s1, ExprValue *pe)
+void asm_expr_unary(TCCState *s1, ExprValue *pe)
 {
     Sym *sym;
     int op, n, label;
@@ -123,7 +124,7 @@ static void asm_expr_unary(TCCState *s1, ExprValue *pe)
     }
 }
     
-static void asm_expr_prod(TCCState *s1, ExprValue *pe)
+void asm_expr_prod(TCCState *s1, ExprValue *pe)
 {
     int op;
     ExprValue e2;
@@ -165,7 +166,7 @@ static void asm_expr_prod(TCCState *s1, ExprValue *pe)
     }
 }
 
-static void asm_expr_logic(TCCState *s1, ExprValue *pe)
+void asm_expr_logic(TCCState *s1, ExprValue *pe)
 {
     int op;
     ExprValue e2;
@@ -194,7 +195,7 @@ static void asm_expr_logic(TCCState *s1, ExprValue *pe)
     }
 }
 
-static inline void asm_expr_sum(TCCState *s1, ExprValue *pe)
+inline void asm_expr_sum(TCCState *s1, ExprValue *pe)
 {
     int op;
     ExprValue e2;
@@ -238,12 +239,12 @@ static inline void asm_expr_sum(TCCState *s1, ExprValue *pe)
     }
 }
 
-static void asm_expr(TCCState *s1, ExprValue *pe)
+void asm_expr(TCCState *s1, ExprValue *pe)
 {
     asm_expr_sum(s1, pe);
 }
 
-static int asm_int_expr(TCCState *s1)
+int asm_int_expr(TCCState *s1)
 {
     ExprValue e;
     asm_expr(s1, &e);
@@ -254,7 +255,7 @@ static int asm_int_expr(TCCState *s1)
 
 /* NOTE: the same name space as C labels is used to avoid using too
    much memory when storing labels in TokenStrings */
-static void asm_new_label1(TCCState *s1, int label, int is_local,
+void asm_new_label1(TCCState *s1, int label, int is_local,
                            int sh_num, int value)
 {
     Sym *sym;
@@ -280,12 +281,12 @@ static void asm_new_label1(TCCState *s1, int label, int is_local,
     sym->next = (void *)value;
 }
 
-static void asm_new_label(TCCState *s1, int label, int is_local)
+void asm_new_label(TCCState *s1, int label, int is_local)
 {
     asm_new_label1(s1, label, is_local, cur_text_section->sh_num, ind);
 }
 
-static void asm_free_labels(TCCState *st)
+void asm_free_labels(TCCState *st)
 {
     Sym *s, *s1;
     Section *sec;
@@ -307,21 +308,21 @@ static void asm_free_labels(TCCState *st)
     st->asm_labels = NULL;
 }
 
-static void use_section1(TCCState *s1, Section *sec)
+void use_section1(TCCState *s1, Section *sec)
 {
     cur_text_section->data_offset = ind;
     cur_text_section = sec;
     ind = cur_text_section->data_offset;
 }
 
-static void use_section(TCCState *s1, const char *name)
+void use_section(TCCState *s1, const char *name)
 {
     Section *sec;
     sec = find_section(s1, name);
     use_section1(s1, sec);
 }
 
-static void asm_parse_directive(TCCState *s1)
+void asm_parse_directive(TCCState *s1)
 {
     int n, offset, v, size, tok1;
     Section *sec;
@@ -579,7 +580,7 @@ static void asm_parse_directive(TCCState *s1)
 
 
 /* assemble a file */
-static int tcc_assemble_internal(TCCState *s1, int do_preprocess)
+int tcc_assemble_internal(TCCState *s1, int do_preprocess)
 {
     int opcode;
 
@@ -679,7 +680,7 @@ static int tcc_assemble_internal(TCCState *s1, int do_preprocess)
 }
 
 /* Assemble the current file */
-static int tcc_assemble(TCCState *s1, int do_preprocess)
+int tcc_assemble(TCCState *s1, int do_preprocess)
 {
     Sym *define_start;
     int ret;
@@ -707,7 +708,7 @@ static int tcc_assemble(TCCState *s1, int do_preprocess)
 /* assemble the string 'str' in the current C compilation unit without
    C preprocessing. NOTE: str is modified by modifying the '\0' at the
    end */
-static void tcc_assemble_inline(TCCState *s1, char *str, int len)
+void tcc_assemble_inline(TCCState *s1, char *str, int len)
 {
     BufferedFile *bf, *saved_file;
     int saved_parse_flags, *saved_macro_ptr;
@@ -739,7 +740,7 @@ static void tcc_assemble_inline(TCCState *s1, char *str, int len)
 /* find a constraint by its number or id (gcc 3 extended
    syntax). return -1 if not found. Return in *pp in char after the
    constraint */
-static int find_constraint(ASMOperand *operands, int nb_operands, 
+int find_constraint(ASMOperand *operands, int nb_operands, 
                            const char *name, const char **pp)
 {
     int index;
@@ -777,7 +778,7 @@ static int find_constraint(ASMOperand *operands, int nb_operands,
     return index;
 }
 
-static void subst_asm_operands(ASMOperand *operands, int nb_operands, 
+void subst_asm_operands(ASMOperand *operands, int nb_operands, 
                                int nb_outputs,
                                CString *out_str, CString *in_str)
 {
@@ -820,7 +821,7 @@ static void subst_asm_operands(ASMOperand *operands, int nb_operands,
 }
 
 
-static void parse_asm_operands(ASMOperand *operands, int *nb_operands_ptr,
+void parse_asm_operands(ASMOperand *operands, int *nb_operands_ptr,
                                int is_output)
 {
     ASMOperand *op;
@@ -874,7 +875,7 @@ static void parse_asm_operands(ASMOperand *operands, int *nb_operands_ptr,
     }
 }
 
-static void parse_asm_str(CString *astr)
+void parse_asm_str(CString *astr)
 {
     skip('(');
     /* read the string */
@@ -890,7 +891,7 @@ static void parse_asm_str(CString *astr)
 }
 
 /* parse the GCC asm() instruction */
-static void asm_instr(void)
+void asm_instr(void)
 {
     CString astr, astr1;
     ASMOperand operands[MAX_ASM_OPERANDS];
@@ -991,7 +992,7 @@ static void asm_instr(void)
     cstr_free(&astr1);
 }
 
-static void asm_global_instr(void)
+void asm_global_instr(void)
 {
     CString astr;
 
