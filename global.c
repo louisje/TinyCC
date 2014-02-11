@@ -1,6 +1,8 @@
 #ifndef GLOBAL_C
 #define GLOBAL_C
 
+#include "cc0.h"
+
 /* global variables */
 
 /* XXX: get rid of this ASAP */
@@ -34,7 +36,11 @@ int parse_flags;
                                         returned at eof */
 #define PARSE_FLAG_ASM_COMMENTS 0x0008 /* '#' can be used for line comment */
 #define PARSE_FLAG_SPACES     0x0010 /* next() returns space tokens (for -E) */
- 
+
+Sym *sym_free_first;
+void **sym_pools;
+int nb_sym_pools;
+
 Section *text_section, *data_section, *bss_section; /* predefined sections */
 Section *cur_text_section; /* current section where function code is
                               generated */

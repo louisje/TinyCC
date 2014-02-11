@@ -17,7 +17,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-#include "cc0lib.h"
 
 int asm_get_local_label_name(TCCState *s1, unsigned int n)
 {

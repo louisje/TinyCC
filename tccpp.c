@@ -31,18 +31,6 @@ static char tok_two_chars[] = "<=\236>=\235!=\225&&\240||\241++\244--\242==\224<
 /* true if isid(c) || isnum(c) */
 static unsigned char isidnum_table[256-CH_EOF];
 
-
-struct macro_level {
-    struct macro_level *prev;
-    int *p;
-};
-
-void next_nomacro(void);
-void next_nomacro_spc(void);
-void macro_subst(TokenString *tok_str, Sym **nested_list,
-                        const int *macro_str, struct macro_level **can_read_stream);
-
-
 /* allocate a new token */
 TokenSym *tok_alloc_new(TokenSym **pts, const char *str, int len)
 {
@@ -336,7 +324,6 @@ void minp(void)
         handle_stray();
 }
 
-
 /* single line C++ comments */
 uint8_t *parse_line_comment(uint8_t *p)
 {
@@ -529,6 +516,7 @@ uint8_t *parse_pp_string(uint8_t *p,
     p++;
     return p;
 }
+
 
 /* skip block of text until #else, #elif or #endif. skip also pairs of
    #if/#endif */
@@ -2339,7 +2327,7 @@ void next_nomacro(void)
         next_nomacro_spc();
     } while (is_space(tok));
 }
- 
+
 /* substitute args in macro_str and return allocated string */
 int *macro_arg_subst(Sym **nested_list, int *macro_str, Sym *args)
 {
@@ -2845,7 +2833,6 @@ inline void unget_tok(int last_tok)
     *q = 0; /* end of token string */
     tok = last_tok;
 }
-
 
 /* better than nothing, but needs extension to handle '-E' option
    correctly too */

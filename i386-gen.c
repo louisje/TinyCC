@@ -17,72 +17,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
-/* number of available registers */
-#define NB_REGS             4
-
-/* a register can belong to several classes. The classes must be
-   sorted from more general to more precise (see gv2() code which does
-   assumptions on it). */
-#define RC_INT     0x0001 /* generic integer register */
-#define RC_FLOAT   0x0002 /* generic float register */
-#define RC_EAX     0x0004
-#define RC_ST0     0x0008 
-#define RC_ECX     0x0010
-#define RC_EDX     0x0020
-#define RC_IRET    RC_EAX /* function return: integer register */
-#define RC_LRET    RC_EDX /* function return: second integer register */
-#define RC_FRET    RC_ST0 /* function return: float register */
-
-/* pretty names for the registers */
-enum {
-    TREG_EAX = 0,
-    TREG_ECX,
-    TREG_EDX,
-    TREG_ST0,
-};
-
-int reg_classes[NB_REGS] = {
-    /* eax */ RC_INT | RC_EAX,
-    /* ecx */ RC_INT | RC_ECX,
-    /* edx */ RC_INT | RC_EDX,
-    /* st0 */ RC_FLOAT | RC_ST0,
-};
-
-/* return registers for function */
-#define REG_IRET TREG_EAX /* single word int return register */
-#define REG_LRET TREG_EDX /* second word return register (for long long) */
-#define REG_FRET TREG_ST0 /* float return register */
-
-/* defined if function parameters must be evaluated in reverse order */
-#define INVERT_FUNC_PARAMS
-
-/* defined if structures are passed as pointers. Otherwise structures
-   are directly pushed on stack. */
-//#define FUNC_STRUCT_PARAM_AS_PTR
-
-/* pointer size, in bytes */
-#define PTR_SIZE 4
-
-/* long double size and alignment, in bytes */
-#define LDOUBLE_SIZE  12
-#define LDOUBLE_ALIGN 4
-/* maximum alignment (for aligned attribute support) */
-#define MAX_ALIGN     8
-
-/******************************************************/
-/* ELF defines */
-
-#define EM_TCC_TARGET EM_386
-
-/* relocation type for 32 bit data relocation */
-#define R_DATA_32   R_386_32
-#define R_JMP_SLOT  R_386_JMP_SLOT
-#define R_COPY      R_386_COPY
-
-#define ELF_START_ADDR 0x08048000
-#define ELF_PAGE_SIZE  0x1000
-
+ 
+#include "cc0.h"
+#include "i386.h"
 /******************************************************/
 
 static unsigned long func_sub_sp_offset;
@@ -138,7 +75,7 @@ void gsym(int t)
 #define psym oad
 
 /* instruction + 4 bytes data. Return the address of the data */
-static int oad(int c, int s)
+int oad(int c, int s)
 {
     int ind1;
 
@@ -153,7 +90,7 @@ static int oad(int c, int s)
 }
 
 /* output constant with relocation if 'r & VT_SYM' is true */
-static void gen_addr32(int r, Sym *sym, int c)
+void gen_addr32(int r, Sym *sym, int c)
 {
     if (r & VT_SYM)
         greloc(cur_text_section, sym, ind, R_386_32);
@@ -162,7 +99,7 @@ static void gen_addr32(int r, Sym *sym, int c)
 
 /* generate a modrm reference. 'op_reg' contains the addtionnal 3
    opcode bits */
-static void gen_modrm(int op_reg, int r, Sym *sym, int c)
+void gen_modrm(int op_reg, int r, Sym *sym, int c)
 {
     op_reg = op_reg << 3;
     if ((r & VT_VALMASK) == VT_CONST) {
@@ -286,7 +223,7 @@ void store(int r, SValue *v)
     }
 }
 
-static void gadd_sp(int val)
+void gadd_sp(int val)
 {
     if (val == (char)val) {
         o(0xc483);
@@ -297,7 +234,7 @@ static void gadd_sp(int val)
 }
 
 /* 'is_jmp' is '1' if it is a jump */
-static void gcall_or_jmp(int is_jmp)
+void gcall_or_jmp(int is_jmp)
 {
     int r;
     if ((vtop->r & (VT_VALMASK | VT_LVAL)) == VT_CONST) {
